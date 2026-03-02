@@ -26,8 +26,11 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* MODIFICA BARRA PER IPHONE */
         #topBar { 
-            padding: 15px 20px; display: flex; justify-content: space-between; 
+            /* Aggiunge spazio extra per la Dynamic Island/Notch */
+            padding: calc(20px + env(safe-area-inset-top)) 20px 15px 20px; 
+            display: flex; justify-content: space-between; 
             align-items: center; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             position: sticky; top: 0; z-index: 100;
         }
@@ -161,9 +164,8 @@
 </div>
 
 <script>
-    // --- CONFIGURAZIONE ---
     const VERSIONE_TURNI = "1.0"; 
-    const DATA_INIZIO_NUOVI_TURNI = "2026-02-06"; // Questa data piloterà tutti i messaggi e i calcoli
+    const DATA_INIZIO_NUOVI_TURNI = "2026-02-06"; 
     const ECCEZIONE_DOMENICA_6P = true; 
     
     const RESET_DOPO_AGGIORNAMENTO = {
@@ -367,30 +369,60 @@
     function calcolaTurni() {
         if (!state.riposoStart) return [];
         let evs = [];
-        let todayNum = stringToNum(new Date().toISOString().split('T')[0]);
+        let today = new Date();
+        // Calcoliamo l'inizio del mese corrente per mostrare i turni passati del mese
+        let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        let startNum = stringToNum(firstOfMonth.toISOString().split('T')[0]);
+        let limit = 180; // giorni futuri
 
-        for (let i = -60; i < 300; i++) {
-            let curr = todayNum + i, dObj = new Date(curr * 86400000), dStr = dObj.toISOString().split('T')[0];
+        for (let i = -31; i < limit; i++) {
+            let dObj = new Date(today);
+            dObj.setDate(today.getDate() + i);
+            let dStr = dObj.toISOString().split('T')[0];
+            let curr = stringToNum(dStr);
+            
             if (state.variazioni[dStr]) {
                 let v = state.variazioni[dStr];
                 evs.push({ title: v, start: dStr, className: v==='RIPOSO'?'bg-riposo':'bg-modificato', allDay: true });
                 continue;
             }
 
-            let isPast = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI));
-            let cfg = isPast ? state.history : state;
+            let isPastUpdate = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI));
+            let cfg = isPastUpdate ? state.history : state;
 
             if (isGiornoRiposo(dStr)) {
                 evs.push({ title: 'RIPOSO', start: dStr, className: 'bg-riposo', allDay: true });
             } else {
                 let t = "";
-                if (cfg.depositoAttivo.startsWith('disp_')) { t = "DISP"; }
-                else if (cfg.rotazioneStart && curr >= stringToNum(cfg.rotazioneStart)) {
-                    let w = 0, rot = stringToNum(cfg.rotazioneStart);
-                    for (let j = rot; j < curr; j++) { if (!isGiornoRiposo(new Date(j * 86400000).toISOString().split('T')[0])) w++; }
-                    let startPos = ((stringToNum(cfg.rotazioneStart) - stringToNum(cfg.riposoStart) + 6) % 15 + 15) % 15;
+                if (cfg.depositoAttivo.startsWith('disp_')) { 
+                    t = "DISP"; 
+                } else if (cfg.rotazioneStart) {
+                    let refRot = stringToNum(cfg.rotazioneStart);
+                    let refRip = stringToNum(cfg.riposoStart);
+                    
+                    // Calcolo giorni lavorativi trascorsi (o mancanti se negativo) rispetto al punto di riferimento
+                    let w = 0;
+                    let step = curr >= refRot ? 1 : -1;
+                    let tempCurr = refRot;
+                    
+                    if (curr >= refRot) {
+                        for (let j = refRot; j < curr; j++) {
+                            if (!isGiornoRiposo(new Date(j * 86400000).toISOString().split('T')[0])) w++;
+                        }
+                    } else {
+                        for (let j = refRot; j > curr; j--) {
+                            if (!isGiornoRiposo(new Date(j * 86400000).toISOString().split('T')[0])) w--;
+                        }
+                    }
+
+                    let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
                     let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
-                    t = depositi[cfg.depositoAttivo][(cfg.turnoIndex + Math.floor((w + offset)/2)) % depositi[cfg.depositoAttivo].length].toUpperCase();
+                    
+                    let len = depositi[cfg.depositoAttivo].length;
+                    let idx = (cfg.turnoIndex + Math.floor((w + offset)/2)) % len;
+                    if (idx < 0) idx += len;
+                    
+                    t = depositi[cfg.depositoAttivo][idx].toUpperCase();
                     if (ECCEZIONE_DOMENICA_6P && dObj.getDay() === 0 && t.startsWith("6P")) t = "DISP";
                 }
                 if (t !== "") evs.push({ title: t, start: dStr, className: (t==='DISP'?'bg-disp':'bg-turno'), allDay: true });
@@ -475,4 +507,3 @@
 </script>
 </body>
 </html>
-
