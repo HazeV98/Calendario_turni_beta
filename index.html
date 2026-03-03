@@ -163,8 +163,8 @@
 </div>
 
 <script>
-    const VERSIONE_TURNI = "1.0.1"; 
-    const DATA_INIZIO_NUOVI_TURNI = "2026-03-04"; 
+    const VERSIONE_TURNI = "1.0"; 
+    const DATA_INIZIO_NUOVI_TURNI = "2026-02-06"; 
     const ECCEZIONE_DOMENICA_6P = true; 
     
     const RESET_DOPO_AGGIORNAMENTO = {
@@ -290,8 +290,8 @@
             const dettagli = turniDatabase[nomeTurno.toUpperCase()];
             if (dettagli) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
-                htmlInfo += `🕒 <b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br>`;
-                htmlInfo += `🏁 <b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
+                htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br>`;
+                htmlInfo += `<b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
             }
             infoArea.innerHTML = htmlInfo; infoArea.style.display = "block"; popolaCambio();
             document.getElementById('editModal').style.display = 'block';
@@ -480,4 +480,5 @@
 </script>
 </body>
 </html>
+
 
