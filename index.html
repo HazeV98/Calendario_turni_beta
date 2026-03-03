@@ -115,7 +115,7 @@
                 <option value="disp_indet">Disponibile 6-2-6-1</option>
                 <option value="disp_det">Disponibile 5-1</option>
             </optgroup>
-            <optgroup label="Rotazioni">
+            <optgroup label="Rotazioni Standard">
                 <option value="rot_fnove">Rotazione F.Nove</option>
                 <option value="spez_fnove">Spezzati F.Nove</option>
                 <option value="rot_proma">Rotazione P.Roma</option>
@@ -169,7 +169,7 @@
 
     // ELENCO FILE: Aggiungi qui i nomi dei tuoi file JSON
     const LISTA_FILE_INFO = ["info_turni_dal_2026-03-02.json", "info_turni_2026-02-06.json"];
-    const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02","rotazioni_2026-03-28.json"]; // Aggiungi file rotazioni future qui
+    const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02","rotazioni_2026-03-28.json"]; 
     
     const RESET_DOPO_AGGIORNAMENTO = {
         rot_fnove: true, 
@@ -191,7 +191,6 @@
         return match ? match[0] : null;
     }
 
-    // Trova se esiste una rotazione futura caricata tramite file
     function trovaDataProssimaRotazione(dataRif) {
         if (!state.rotCache) return null;
         const dateDisponibili = Object.keys(state.rotCache).sort();
@@ -199,7 +198,6 @@
         return dateDisponibili.find(d => stringToNum(d) > rifNum);
     }
 
-    // Ottiene la struttura dei depositi valida per una specifica data
     function ottieniDepositiPerData(dateStr) {
         if (!state.rotCache) return depositi;
         const dateChiavi = Object.keys(state.rotCache).sort();
@@ -217,7 +215,6 @@
             const rotazioniRes = await fetch('rotazioni.json' + nocache);
             if (rotazioniRes.ok) depositi = await rotazioniRes.json();
 
-            // Caricamento rotazioni future
             if (!state.rotCache) state.rotCache = {};
             const rotPromises = LISTA_FILE_ROTAZIONI.map(async (file) => {
                 const dataInizio = estraiDataDaNome(file);
@@ -229,7 +226,6 @@
                 }
             });
 
-            // Caricamento file info multipli
             if (!state.dbCache) state.dbCache = {};
             const infoPromises = LISTA_FILE_INFO.map(async (file) => {
                 const dataInizio = estraiDataDaNome(file);
@@ -512,3 +508,4 @@
 </script>
 </body>
 </html>
+ 
