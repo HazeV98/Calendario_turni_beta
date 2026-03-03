@@ -26,7 +26,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Barra ottimizzata per Safe Area iPhone */
         #topBar { 
             padding: calc(20px + env(safe-area-inset-top)) 20px 15px 20px; 
             display: flex; justify-content: space-between; 
@@ -66,10 +65,6 @@
         .btn-reset { background: #f5365c; padding: 8px 15px; width: auto; font-size: 12px; }
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
         .deposito-tag { font-size: 10px; background: #eef2ff; color: var(--turno); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
-
-        @media (max-width: 400px) {
-            .fc-event { font-size: 0.75em !important; padding: 4px 2px !important; }
-        }
     </style>
 </head>
 <body>
@@ -97,7 +92,6 @@
 <div id="backupModal">
     <div class="modal-content">
         <h3 style="color: var(--turno); margin-top: 0;">Backup Dati</h3>
-        <p class="instruction-text" style="font-size: 14px;">Gestisci i tuoi dati tramite file per non perdere i tuoi turni.</p>
         <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importaDatiDaFile(event)">
         <button class="btn" style="background: var(--turno);" onclick="esportaDatiSuFile()">Scarica Backup (Esporta)</button>
         <button class="btn" style="background: var(--riposo);" onclick="document.getElementById('fileInput').click()">Carica Backup (Importa)</button>
@@ -164,22 +158,15 @@
 
 <script>
     const VERSIONE_TURNI = "1.0"; 
-    const DATA_INIZIO_NUOVI_TURNI = "2026-02-06"; 
+    const DATA_INIZIO_NUOVI_TURNI = "2026-03-02"; 
     const ECCEZIONE_DOMENICA_6P = true; 
 
-    // ELENCO FILE: Aggiungi qui i nomi dei tuoi file JSON
     const LISTA_FILE_INFO = ["info_turni_dal_2026-03-02.json", "info_turni_2026-02-06.json"];
     const LISTA_FILE_ROTAZIONI = ["rotazioni_2026-03-02","rotazioni_2026-03-28.json"]; 
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, 
-        spez_fnove: true, 
-        rot_proma: true, 
-        spez_proma: true,
-        rot_szaccaria: true, 
-        spez_szaccaria: true, 
-        rot_lido: true, 
-        spez_lido: true
+        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
+        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true
     };
 
     let depositi = {}; 
@@ -191,22 +178,23 @@
         return match ? match[0] : null;
     }
 
+    // Restituisce il database rotazioni corretto per una data specifica
+    function ottieniDepositiPerData(dateStr) {
+        if (!state.rotCache || Object.keys(state.rotCache).length === 0) return depositi;
+        const dateChiavi = Object.keys(state.rotCache).sort();
+        let dSelezionata = stringToNum(dateStr);
+        let validRot = depositi; 
+        for (let i = 0; i < dateChiavi.length; i++) {
+            if (dSelezionata >= stringToNum(dateChiavi[i])) { validRot = state.rotCache[dateChiavi[i]]; }
+        }
+        return validRot;
+    }
+
     function trovaDataProssimaRotazione(dataRif) {
         if (!state.rotCache) return null;
         const dateDisponibili = Object.keys(state.rotCache).sort();
         const rifNum = stringToNum(dataRif);
         return dateDisponibili.find(d => stringToNum(d) > rifNum);
-    }
-
-    function ottieniDepositiPerData(dateStr) {
-        if (!state.rotCache) return depositi;
-        const dateChiavi = Object.keys(state.rotCache).sort();
-        let dSelezionata = stringToNum(dateStr);
-        let lastValid = depositi;
-        for (let i = 0; i < dateChiavi.length; i++) {
-            if (dSelezionata >= stringToNum(dateChiavi[i])) { lastValid = state.rotCache[dateChiavi[i]]; }
-        }
-        return lastValid;
     }
 
     async function caricaDatiEsterni() {
@@ -254,10 +242,8 @@
                 const dataLimiteObj = new Date(DATA_INIZIO_NUOVI_TURNI);
                 const dataMenoUnoObj = new Date(dataLimiteObj);
                 dataMenoUnoObj.setDate(dataMenoUnoObj.getDate() - 1);
-                const strLimite = formattaData(DATA_INIZIO_NUOVI_TURNI);
-                const strMenoUno = formattaData(dataMenoUnoObj.toISOString().split('T')[0]);
                 document.getElementById('welcomeTitle').innerText = "Aggiornamento Turni";
-                document.getElementById('welcomeDesc').innerText = `Il calendario rimarrà invariato fino al ${strMenoUno}. Dal ${strLimite} inizierà la nuova rotazione.`;
+                document.getElementById('welcomeDesc').innerText = `Il calendario rimarrà invariato fino al ${formattaData(dataMenoUnoObj.toISOString().split('T')[0])}. Dal ${formattaData(DATA_INIZIO_NUOVI_TURNI)} inizierà la nuova rotazione.`;
                 document.getElementById('depotSelectMain').style.display = 'none';
                 document.getElementById('btnConfRot').disabled = false;
                 document.getElementById('btnConfRot').style.background = 'var(--turno)';
@@ -279,10 +265,8 @@
             state.setupStep = 1;
         } else if (state.version !== VERSIONE_TURNI) {
             state.history = {
-                riposoStart: state.riposoStart,
-                rotazioneStart: state.rotazioneStart,
-                turnoIndex: state.turnoIndex,
-                depositoAttivo: state.depositoAttivo
+                riposoStart: state.riposoStart, rotazioneStart: state.rotazioneStart,
+                turnoIndex: state.turnoIndex, depositoAttivo: state.depositoAttivo
             };
         }
         state.version = VERSIONE_TURNI;
@@ -443,14 +427,23 @@
         return evs;
     }
 
+    // Carica correttamente la lista turni in base alla data di configurazione
     function getOptionsTurni() {
-        const depsAttuali = ottieniDepositiPerData(tempRotDate || new Date().toISOString().split('T')[0]);
-        if (!depsAttuali[state.depositoAttivo]) return ""; 
+        const dataRif = tempRotDate || new Date().toISOString().split('T')[0];
+        const depsAttuali = ottieniDepositiPerData(dataRif);
+        let lista = (depsAttuali && depsAttuali[state.depositoAttivo]) 
+                    ? depsAttuali[state.depositoAttivo] 
+                    : (depositi ? depositi[state.depositoAttivo] : null);
+
+        if (!lista || lista.length === 0) return ""; 
+
         let htmlDisp = "", htmlTurni = "", dispAggiunto = false;
-        depsAttuali[state.depositoAttivo].map((n, i) => ({ n: n.toUpperCase(), i: i }))
+        lista.map((n, i) => ({ n: n.toUpperCase(), i: i }))
             .sort((a, b) => a.n.localeCompare(b.n, undefined, {numeric: true}))
             .forEach(item => {
-                if (item.n === "DISP") { if (!dispAggiunto) { htmlDisp = `<option value="${item.i}">DISP</option>`; dispAggiunto = true; } }
+                if (item.n === "DISP") { 
+                    if (!dispAggiunto) { htmlDisp = `<option value="${item.i}">DISP</option>`; dispAggiunto = true; } 
+                }
                 else { htmlTurni += `<option value="${item.i}">${item.n}</option>`; }
             });
         return htmlDisp + htmlTurni;
