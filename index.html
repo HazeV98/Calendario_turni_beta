@@ -200,18 +200,12 @@
     ];
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, 
-        spez_fnove: true, 
-        rot_proma: true, 
-        spez_proma: true,
-        rot_szaccaria: true, 
-        spez_szaccaria: true, 
-        rot_lido: true, 
-        spez_lido: true
+        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
+        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
-    if (!state.colori) state.colori = {}; // Assicura che la memoria dei colori esista per i vecchi salvataggi
+    if (!state.colori) state.colori = {}; 
 
     let selectedDate, tempRotDate, calendar;
 
@@ -461,6 +455,7 @@
         state.setupStep = 3; salvaLocal(); location.reload();
     }
 
+    // MODIFICA QUI: Rimosso className in favore di ev.backgroundColor in presenza di colore personalizzato
     function calcolaTurni() {
         if (!state.riposoStart) return [];
         let evs = []; let today = new Date();
@@ -480,15 +475,22 @@
             let dObj = new Date(today); dObj.setDate(today.getDate() + i);
             let dStr = dObj.toISOString().split('T')[0];
             let curr = stringToNum(dStr);
+            
+            // Variabili per il colore personalizzato
+            let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
+            let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff'; // Testo scuro sul giallo, altrimenti bianco
+
             if (state.variazioni[dStr]) {
-                let ev = { title: state.variazioni[dStr], start: dStr, className: state.variazioni[dStr]==='RIPOSO'?'bg-riposo':'bg-modificato', allDay: true };
-                if (state.colori && state.colori[dStr]) ev.color = state.colori[dStr];
+                let ev = { title: state.variazioni[dStr], start: dStr, allDay: true };
+                if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
+                else { ev.className = state.variazioni[dStr]==='RIPOSO' ? 'bg-riposo' : 'bg-modificato'; }
                 evs.push(ev);
                 continue;
             }
             if (isGiornoRiposo(dStr)) { 
-                let ev = { title: 'RIPOSO', start: dStr, className: 'bg-riposo', allDay: true };
-                if (state.colori && state.colori[dStr]) ev.color = state.colori[dStr];
+                let ev = { title: 'RIPOSO', start: dStr, allDay: true };
+                if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
+                else { ev.className = 'bg-riposo'; }
                 evs.push(ev);
             }
             else {
@@ -517,8 +519,9 @@
                     }
                 }
                 if (t !== "") {
-                    let ev = { title: t, start: dStr, className: (t==='DISP'?'bg-disp':'bg-turno'), allDay: true };
-                    if (state.colori && state.colori[dStr]) ev.color = state.colori[dStr];
+                    let ev = { title: t, start: dStr, allDay: true };
+                    if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
+                    else { ev.className = (t==='DISP' ? 'bg-disp' : 'bg-turno'); }
                     evs.push(ev);
                 }
             }
@@ -539,7 +542,6 @@
         return htmlDisp + htmlTurni;
     }
 
-    // Funzioni per la logica dei colori
     function apriColorModal() {
         document.getElementById('editModal').style.display = 'none';
         document.getElementById('colorModal').style.display = 'block';
