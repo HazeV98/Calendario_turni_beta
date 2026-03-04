@@ -201,22 +201,27 @@
         return futura ? futura.inizio : null;
     }
 
-    // Funzione dedicata all'esportazione PDF
+    // PDF MODIFICATO (Orientamento verticale e titolo visibile)
     function scaricaPDF() {
         const element = document.getElementById('calendar');
+        let titleEl = document.querySelector('.fc-toolbar-title');
+        let meseTesto = titleEl ? titleEl.innerText.replace(/ /g, "_") : "Calendario";
+
         const opt = {
             margin:       [10, 5, 10, 5],
-            filename:     'mio_calendario_turni.pdf',
+            filename:     `Turni_${meseTesto}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        const toolbar = document.querySelector('.fc-header-toolbar');
-        toolbar.style.display = 'none'; // Nasconde i controlli del calendario nel PDF
+        // Nascondo solo i bottoni e lascio il titolo del mese
+        const buttons = document.querySelectorAll('.fc-button');
+        buttons.forEach(b => b.style.display = 'none');
 
         html2pdf().set(opt).from(element).save().then(() => {
-            toolbar.style.display = 'flex'; // Ripristina dopo il salvataggio
+            // Ripristino i bottoni
+            buttons.forEach(b => b.style.display = '');
         });
     }
 
@@ -377,9 +382,24 @@
         return (pos === 6 || pos === 13 || pos === 14);
     }
 
+    // RIPRISTINATA LA LOGICA DISP
     function attivaRotazioneFinale() {
         const val = parseInt(document.getElementById('tSel').value);
         if(isNaN(val)) return;
+
+        // Controllo se il turno selezionato è un DISP
+        const currentRotRules = getRotazionePerData(tempRotDate);
+        if (currentRotRules && currentRotRules[state.depositoAttivo]) {
+            if (currentRotRules[state.depositoAttivo][val].toUpperCase() === "DISP") {
+                let d = new Date(tempRotDate); d.setDate(d.getDate() + 1);
+                let dStr = d.toISOString().split('T')[0];
+                while(isGiornoRiposo(dStr)) { d.setDate(d.getDate() + 1); dStr = d.toISOString().split('T')[0]; }
+                tempRotDate = dStr;
+                document.getElementById('stepDateDisplay').innerText = formattaData(tempRotDate);
+                document.getElementById('stepActionArea').innerHTML = `<select id="tSel"><option value="" disabled selected>Seleziona turno...</option>${getOptionsTurni()}</select>`;
+                return; // Ferma e aspetta il prossimo input dell'utente
+            }
+        }
 
         if (state.setupStep === 2) {
             state.turnoIndex = val; state.rotazioneStart = tempRotDate;
@@ -394,15 +414,32 @@
             }
         } else if (state.setupStep === 4) {
             state.futureConfig = { dataInizio: tempRotDate, turnoIndex: val };
+        } else if (state.setupStep === 3) {
+            // Aggiornamento post-reset
+            state.turnoIndex = val;
+            state.rotazioneStart = tempRotDate;
         }
 
         state.setupStep = 3; salvaLocal(); location.reload();
     }
 
+    // RIPRISTINATO IL CALCOLO LIMITE DINAMICO
     function calcolaTurni() {
         if (!state.riposoStart) return [];
         let evs = []; let today = new Date();
-        for (let i = -31; i < 365; i++) {
+        
+        let limit = 365;
+        let todayNum = stringToNum(today.toISOString().split('T')[0]);
+        if (state.rotazioneStart) {
+            let distDaOggi = Math.abs(todayNum - stringToNum(state.rotazioneStart));
+            limit = distDaOggi + 365; 
+        }
+        if (state.futureConfig && state.futureConfig.dataInizio) {
+            let distFutura = Math.abs(todayNum - stringToNum(state.futureConfig.dataInizio));
+            if (distFutura + 365 > limit) limit = distFutura + 365;
+        }
+
+        for (let i = -31; i < limit; i++) {
             let dObj = new Date(today); dObj.setDate(today.getDate() + i);
             let dStr = dObj.toISOString().split('T')[0];
             let curr = stringToNum(dStr);
@@ -502,6 +539,4 @@
 </script>
 </body>
 </html>
-
-
-
+ 
