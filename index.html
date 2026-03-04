@@ -17,7 +17,8 @@
     
     <style>
         :root { 
-            --riposo: #2dce89; --disp: #feb236; --turno: #5e72e4; 
+            /* Modificato il verde di base dei riposi per renderlo più scuro */
+            --riposo: #1e8449; --disp: #feb236; --turno: #5e72e4; 
             --bg: #f7f9fe; --text: #32325d;
         }
         
@@ -68,13 +69,16 @@
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
         .deposito-tag { font-size: 10px; background: #eef2ff; color: var(--turno); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
 
-        /* Stili per la scelta colori */
+        /* Stili per la scelta dei nuovi colori */
         .color-circle { width: 45px; height: 45px; border-radius: 50%; display: inline-block; margin: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .color-white { background: #ffffff; border: 2px solid #e9ecef; }
         .color-yellow { background: #f1c40f; }
-        .color-green { background: #2dce89; }
-        .color-blue { background: #5e72e4; }
+        .color-orange { background: #fd7e14; }
         .color-red { background: #f5365c; }
+        .color-pink { background: #e83e8c; }
+        .color-purple { background: #8965e0; }
+        .color-blue { background: #5e72e4; }
+        .color-teal { background: #11cdef; }
+        .color-green { background: #2dce89; }
 
         @media (max-width: 400px) {
             .fc-event { font-size: 0.75em !important; padding: 4px 2px !important; }
@@ -171,13 +175,17 @@
     <div class="modal-content">
         <h3 style="margin-top:0; color: var(--text);">Scegli Colore</h3>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
-            <div class="color-circle color-white" onclick="salvaColore('')"></div>
             <div class="color-circle color-yellow" onclick="salvaColore('#f1c40f')"></div>
-            <div class="color-circle color-green" onclick="salvaColore('#2dce89')"></div>
-            <div class="color-circle color-blue" onclick="salvaColore('#5e72e4')"></div>
+            <div class="color-circle color-orange" onclick="salvaColore('#fd7e14')"></div>
             <div class="color-circle color-red" onclick="salvaColore('#f5365c')"></div>
+            <div class="color-circle color-pink" onclick="salvaColore('#e83e8c')"></div>
+            <div class="color-circle color-purple" onclick="salvaColore('#8965e0')"></div>
+            <div class="color-circle color-blue" onclick="salvaColore('#5e72e4')"></div>
+            <div class="color-circle color-teal" onclick="salvaColore('#11cdef')"></div>
+            <div class="color-circle color-green" onclick="salvaColore('#2dce89')"></div>
         </div>
-        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 25px;" onclick="chiudiColorModal()">Annulla</button>
+        <button class="btn" style="background: #adb5bd; margin-top: 20px;" onclick="salvaColore('')">Rimuovi Colore</button>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 10px;" onclick="chiudiColorModal()">Annulla</button>
     </div>
 </div>
 
@@ -200,8 +208,14 @@
     ];
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
-        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true
+        rot_fnove: true, 
+        spez_fnove: true, 
+        rot_proma: true, 
+        spez_proma: true,
+        rot_szaccaria: true, 
+        spez_szaccaria: true, 
+        rot_lido: true, 
+        spez_lido: true
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
@@ -455,7 +469,6 @@
         state.setupStep = 3; salvaLocal(); location.reload();
     }
 
-    // MODIFICA QUI: Rimosso className in favore di ev.backgroundColor in presenza di colore personalizzato
     function calcolaTurni() {
         if (!state.riposoStart) return [];
         let evs = []; let today = new Date();
@@ -476,9 +489,8 @@
             let dStr = dObj.toISOString().split('T')[0];
             let curr = stringToNum(dStr);
             
-            // Variabili per il colore personalizzato
             let customColor = (state.colori && state.colori[dStr]) ? state.colori[dStr] : null;
-            let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff'; // Testo scuro sul giallo, altrimenti bianco
+            let tColor = (customColor === '#f1c40f') ? '#32325d' : '#ffffff';
 
             if (state.variazioni[dStr]) {
                 let ev = { title: state.variazioni[dStr], start: dStr, allDay: true };
@@ -613,3 +625,4 @@
 </script>
 </body>
 </html>
+ 
