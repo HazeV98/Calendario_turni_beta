@@ -202,30 +202,40 @@
         const fileKey = config ? config.file : null;
         return (fileKey && state.rotCache && state.rotCache[fileKey]) ? state.rotCache[fileKey] : null;
     }
+async function caricaDatiEsterni() {
+    const nocache = "?v=" + new Date().getTime();
+    if (!state.rotCache) state.rotCache = {};
+    if (!state.dbCache) state.dbCache = {};
 
-    async function caricaDatiEsterni() {
+    // Caricamento Rotazioni con gestione errore singola
+    const rotPromises = LISTA_FILE_ROTAZIONI.map(async (c) => {
         try {
-            const nocache = "?v=" + new Date().getTime();
-            
-            // Caricamento manuale file rotazioni
-            if (!state.rotCache) state.rotCache = {};
-            const rotPromises = LISTA_FILE_ROTAZIONI.map(async (c) => {
-                try {
-                    const res = await fetch(c.file + nocache);
-                    if (res.ok) state.rotCache[c.file] = await res.json();
-                } catch(e) { console.error("Errore rotazione", c.file); }
-            });
+            const res = await fetch(c.file + nocache);
+            if (res.ok) state.rotCache[c.file] = await res.json();
+            else console.warn("Manca file rotazione:", c.file);
+        } catch(e) { console.error("Errore fetch rotazione:", c.file); }
+    });
 
-            // Caricamento file info multipli
-            if (!state.dbCache) state.dbCache = {};
-            const infoPromises = LISTA_FILE_INFO.map(async (file) => {
-                const dataInizio = estraiDataDaNome(file);
-                if (dataInizio) {
-                    try {
-                        const res = await fetch(file + nocache);
-                        if (res.ok) state.dbCache[dataInizio] = await res.json();
-                    } catch(e) { console.error("Errore file", file); }
-                }
+    // Caricamento Info con gestione errore singola
+    const infoPromises = LISTA_FILE_INFO.map(async (file) => {
+        const dataInizio = estraiDataDaNome(file);
+        if (dataInizio) {
+            try {
+                const res = await fetch(file + nocache);
+                if (res.ok) state.dbCache[dataInizio] = await res.json();
+                else console.warn("Manca file info:", file);
+            } catch(e) { console.error("Errore fetch info:", file); }
+        }
+    });
+
+    // Aspetta tutti ma prosegui comunque
+    await Promise.allSettled([...rotPromises, ...infoPromises]);
+    salvaLocal();
+    // Forza il rendering se il calendario è già pronto
+    if (calendar) calendar.refetchEvents();
+}
+
+    
             });
 
             await Promise.all([...rotPromises, ...infoPromises]);
@@ -537,3 +547,4 @@
 </script>
 </body>
 </html>
+
