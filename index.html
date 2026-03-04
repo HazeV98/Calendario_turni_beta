@@ -59,7 +59,7 @@
             font-size: 13px; text-align: center; line-height: 1.4;
         }
 
-        #welcomeModal, #stepModal, #editModal, #resetModal, #backupModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        #welcomeModal, #stepModal, #editModal, #resetModal, #backupModal, #colorModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
         .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
 
         select { width: 100%; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
@@ -67,6 +67,14 @@
         .btn-reset { background: #f5365c; padding: 8px 15px; width: auto; font-size: 12px; }
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
         .deposito-tag { font-size: 10px; background: #eef2ff; color: var(--turno); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
+
+        /* Stili per la scelta colori */
+        .color-circle { width: 45px; height: 45px; border-radius: 50%; display: inline-block; margin: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .color-white { background: #ffffff; border: 2px solid #e9ecef; }
+        .color-yellow { background: #f1c40f; }
+        .color-green { background: #2dce89; }
+        .color-blue { background: #5e72e4; }
+        .color-red { background: #f5365c; }
 
         @media (max-width: 400px) {
             .fc-event { font-size: 0.75em !important; padding: 4px 2px !important; }
@@ -153,8 +161,23 @@
         <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:10px; text-align:left; color:#525f7f; display:none;"></div>
         <select id="singleTurnoSelect"></select>
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
+        <button class="btn" style="background: #11cdef;" onclick="apriColorModal()">Colore Sfondo</button>
         <button class="btn" style="background: #adb5bd;" onclick="resetGiornoSingolo()">Ripristina Originale</button>
         <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 15px;" onclick="chiudiEdit()">Chiudi</button>
+    </div>
+</div>
+
+<div id="colorModal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text);">Scegli Colore</h3>
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
+            <div class="color-circle color-white" onclick="salvaColore('')"></div>
+            <div class="color-circle color-yellow" onclick="salvaColore('#f1c40f')"></div>
+            <div class="color-circle color-green" onclick="salvaColore('#2dce89')"></div>
+            <div class="color-circle color-blue" onclick="salvaColore('#5e72e4')"></div>
+            <div class="color-circle color-red" onclick="salvaColore('#f5365c')"></div>
+        </div>
+        <button class="btn" style="background: #f8f9fa; color: #525f7f; margin-top: 25px;" onclick="chiudiColorModal()">Annulla</button>
     </div>
 </div>
 
@@ -177,11 +200,19 @@
     ];
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
-        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true
+        rot_fnove: true, 
+        spez_fnove: true, 
+        rot_proma: true, 
+        spez_proma: true,
+        rot_szaccaria: true, 
+        spez_szaccaria: true, 
+        rot_lido: true, 
+        spez_lido: true
     };
 
-    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, setupStep: 0, dbCache: {}, rotCache: {} };
+    let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
+    if (!state.colori) state.colori = {}; // Assicura che la memoria dei colori esista per i vecchi salvataggi
+
     let selectedDate, tempRotDate, calendar;
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
@@ -201,16 +232,13 @@
         return futura ? futura.inizio : null;
     }
 
-    // PDF MODIFICATO: Ottimizzate larghezza e altezza per formato A4 verticale
     function scaricaPDF() {
         const element = document.getElementById('calendar');
         let titleEl = document.querySelector('.fc-toolbar-title');
         let meseTesto = titleEl ? titleEl.innerText.replace(/ /g, "_") : "Calendario";
 
-        // Memorizzo le dimensioni attuali
         const originalWidth = element.style.width;
         
-        // Imposto le proporzioni perfette per il foglio A4 (circa 700x960px)
         element.style.width = '700px';
         calendar.setOption('height', 960);
         calendar.updateSize();
@@ -219,18 +247,15 @@
             margin:       [10, 5, 10, 5],
             filename:     `Turni_${meseTesto}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Nascondo solo i bottoni e lascio il titolo del mese
         const buttons = document.querySelectorAll('.fc-button');
         buttons.forEach(b => b.style.display = 'none');
 
-        // Uso un leggero ritardo (300ms) per permettere al calendario di ridisegnarsi prima dello scatto
         setTimeout(() => {
             html2pdf().set(opt).from(element).save().then(() => {
-                // Ripristino tutto com'era prima sul cellulare
                 buttons.forEach(b => b.style.display = '');
                 element.style.width = originalWidth;
                 calendar.setOption('height', 'auto');
@@ -456,10 +481,16 @@
             let dStr = dObj.toISOString().split('T')[0];
             let curr = stringToNum(dStr);
             if (state.variazioni[dStr]) {
-                evs.push({ title: state.variazioni[dStr], start: dStr, className: state.variazioni[dStr]==='RIPOSO'?'bg-riposo':'bg-modificato', allDay: true });
+                let ev = { title: state.variazioni[dStr], start: dStr, className: state.variazioni[dStr]==='RIPOSO'?'bg-riposo':'bg-modificato', allDay: true };
+                if (state.colori && state.colori[dStr]) ev.color = state.colori[dStr];
+                evs.push(ev);
                 continue;
             }
-            if (isGiornoRiposo(dStr)) { evs.push({ title: 'RIPOSO', start: dStr, className: 'bg-riposo', allDay: true }); }
+            if (isGiornoRiposo(dStr)) { 
+                let ev = { title: 'RIPOSO', start: dStr, className: 'bg-riposo', allDay: true };
+                if (state.colori && state.colori[dStr]) ev.color = state.colori[dStr];
+                evs.push(ev);
+            }
             else {
                 let isPastUpdate = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI));
                 let cfgBase = isPastUpdate ? state.history : state;
@@ -485,7 +516,11 @@
                         if (ECCEZIONE_DOMENICA_6P && dObj.getDay() === 0 && t.startsWith("6P")) t = "DISP";
                     }
                 }
-                if (t !== "") evs.push({ title: t, start: dStr, className: (t==='DISP'?'bg-disp':'bg-turno'), allDay: true });
+                if (t !== "") {
+                    let ev = { title: t, start: dStr, className: (t==='DISP'?'bg-disp':'bg-turno'), allDay: true };
+                    if (state.colori && state.colori[dStr]) ev.color = state.colori[dStr];
+                    evs.push(ev);
+                }
             }
         }
         return evs;
@@ -504,8 +539,29 @@
         return htmlDisp + htmlTurni;
     }
 
+    // Funzioni per la logica dei colori
+    function apriColorModal() {
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('colorModal').style.display = 'block';
+    }
+
+    function chiudiColorModal() {
+        document.getElementById('colorModal').style.display = 'none';
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    function salvaColore(hexColor) {
+        if (!hexColor) {
+            delete state.colori[selectedDate];
+        } else {
+            state.colori[selectedDate] = hexColor;
+        }
+        salvaLocal();
+        location.reload();
+    }
+
     function salvaCambioSingolo() { state.variazioni[selectedDate] = document.getElementById('singleTurnoSelect').value; salvaLocal(); location.reload(); }
-    function resetGiornoSingolo() { delete state.variazioni[selectedDate]; salvaLocal(); location.reload(); }
+    function resetGiornoSingolo() { delete state.variazioni[selectedDate]; delete state.colori[selectedDate]; salvaLocal(); location.reload(); }
     function aggiornaUI() { document.getElementById('activeDepotLabel').innerText = state.depositoAttivo || "Configurazione"; }
     function apriReset() { document.getElementById('resetModal').style.display = 'block'; }
     function chiudiReset() { document.getElementById('resetModal').style.display = 'none'; }
@@ -514,18 +570,21 @@
     function chiudiBackup() { document.getElementById('backupModal').style.display = 'none'; }
     function chiudiStep() { document.getElementById('stepModal').style.display = 'none'; }
     function chiudiEdit() { document.getElementById('editModal').style.display = 'none'; }
+    
     function esportaDatiSuFile() {
         const data = localStorage.getItem('myTurniApp'); if(!data) return;
         const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `backup_turni_${new Date().toISOString().split('T')[0]}.json`;
         a.click(); URL.revokeObjectURL(url);
     }
+    
     function importaDatiDaFile(event) {
         const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) { try { localStorage.setItem('myTurniApp', e.target.result); alert("Backup ripristinato!"); location.reload(); } catch (err) { alert("Errore file non valido."); } };
         reader.readAsText(file);
     }
+    
     function popolaCambio() {
         const s = document.getElementById('singleTurnoSelect');
         s.innerHTML = '<option value="" disabled selected>Cambia...</option><option value="RIPOSO">RIPOSO</option><option value="DISP">DISP</option>';
@@ -538,6 +597,7 @@
         document.getElementById('btnSalvaCambio').disabled = true;
         s.onchange = () => { document.getElementById('btnSalvaCambio').disabled = false; };
     }
+
     function inizializzaCalendario() {
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
             initialView: 'dayGridMonth', locale: 'it', firstDay: 1, height: 'auto',
