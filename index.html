@@ -163,7 +163,7 @@
         <h3 id="modalDate" style="margin-top:0;">Data</h3>
         <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:10px; text-align:left; color:#525f7f; display:none;"></div>
         
-        <input type="text" id="singleTurnoSelect" placeholder="Es. 1A2B, RIPOSO, DISP..." oninput="this.value = this.value.toUpperCase(); document.getElementById('btnSalvaCambio').disabled = this.value.trim() === '';">
+        <input type="text" id="singleTurnoSelect" placeholder="Inserisci il turno" oninput="this.value = this.value.toUpperCase(); document.getElementById('btnSalvaCambio').disabled = this.value.trim() === '';">
         
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
         <button class="btn" style="background: #11cdef;" onclick="apriColorModal()">Colore Sfondo</button>
@@ -621,3 +621,4 @@
 </script>
 </body>
 </html>
+
