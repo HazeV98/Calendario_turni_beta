@@ -209,17 +209,22 @@
     ];
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
-        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true
+        rot_fnove: true, 
+        spez_fnove: true, 
+        rot_proma: true, 
+        spez_proma: true,
+        rot_szaccaria: true, 
+        spez_szaccaria: true, 
+        rot_lido: true, 
+        spez_lido: true
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
     if (!state.colori) state.colori = {}; 
 
     let selectedDate, tempRotDate, calendar;
-    let deferredPrompt; // Variabile per gestire l'installazione PWA
+    let deferredPrompt; 
 
-    // Logica per gestire il prompt di installazione
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
@@ -441,7 +446,7 @@
     }
 
     function isGiornoRiposo(dStr) {
-        if (state.variazioni[dStr] === "RIPOSO") return true;
+        if (state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL") return true;
         let cfg = (state.history && stringToNum(dStr) < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
         if (!cfg.riposoStart) return false;
         let ref = stringToNum(cfg.riposoStart), curr = stringToNum(dStr);
@@ -514,12 +519,20 @@
             if (state.variazioni[dStr]) {
                 let ev = { title: state.variazioni[dStr], start: dStr, allDay: true };
                 if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
-                else { ev.className = state.variazioni[dStr]==='RIPOSO' ? 'bg-riposo' : 'bg-modificato'; }
+                else { ev.className = (state.variazioni[dStr]==='RIPOSO' || state.variazioni[dStr]==='AL') ? 'bg-riposo' : 'bg-modificato'; }
                 evs.push(ev);
                 continue;
             }
             if (isGiornoRiposo(dStr)) { 
-                let ev = { title: 'RIPOSO', start: dStr, allDay: true };
+                let titoloRiposo = 'RIPOSO';
+                let cfgBase = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+                if (cfgBase.riposoStart && cfgBase.depositoAttivo !== 'disp_det') {
+                    let ref = stringToNum(cfgBase.riposoStart);
+                    let pos = ((curr - ref + 6) % 15 + 15) % 15;
+                    if (pos === 13) titoloRiposo = 'AL';
+                }
+
+                let ev = { title: titoloRiposo, start: dStr, allDay: true };
                 if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
                 else { ev.className = 'bg-riposo'; }
                 evs.push(ev);
