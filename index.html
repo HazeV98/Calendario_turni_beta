@@ -17,7 +17,6 @@
     
     <style>
         :root { 
-            /* Modificato il verde di base dei riposi per renderlo più scuro */
             --riposo: #1e8449; --disp: #feb236; --turno: #5e72e4; 
             --bg: #f7f9fe; --text: #32325d;
         }
@@ -63,7 +62,7 @@
         #welcomeModal, #stepModal, #editModal, #resetModal, #backupModal, #colorModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
         .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
 
-        select { width: 100%; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
+        select, input[type="text"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
         .btn { padding: 16px; border: none; border-radius: 14px; color: white; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; font-size: 15px; }
         .btn-reset { background: #f5365c; padding: 8px 15px; width: auto; font-size: 12px; }
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
@@ -163,7 +162,9 @@
     <div class="modal-content">
         <h3 id="modalDate" style="margin-top:0;">Data</h3>
         <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:10px; text-align:left; color:#525f7f; display:none;"></div>
-        <select id="singleTurnoSelect"></select>
+        
+        <input type="text" id="singleTurnoSelect" placeholder="Es. 1A2B, RIPOSO, DISP..." oninput="this.value = this.value.toUpperCase(); document.getElementById('btnSalvaCambio').disabled = this.value.trim() === '';">
+        
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
         <button class="btn" style="background: #11cdef;" onclick="apriColorModal()">Colore Sfondo</button>
         <button class="btn" style="background: #adb5bd;" onclick="resetGiornoSingolo()">Ripristina Originale</button>
@@ -208,14 +209,8 @@
     ];
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, 
-        spez_fnove: true, 
-        rot_proma: true, 
-        spez_proma: true,
-        rot_szaccaria: true, 
-        spez_szaccaria: true, 
-        rot_lido: true, 
-        spez_lido: true
+        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
+        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
@@ -574,7 +569,15 @@
         location.reload();
     }
 
-    function salvaCambioSingolo() { state.variazioni[selectedDate] = document.getElementById('singleTurnoSelect').value; salvaLocal(); location.reload(); }
+    function salvaCambioSingolo() { 
+        const val = document.getElementById('singleTurnoSelect').value.trim().toUpperCase();
+        if(val) {
+            state.variazioni[selectedDate] = val; 
+            salvaLocal(); 
+            location.reload(); 
+        }
+    }
+    
     function resetGiornoSingolo() { delete state.variazioni[selectedDate]; delete state.colori[selectedDate]; salvaLocal(); location.reload(); }
     function aggiornaUI() { document.getElementById('activeDepotLabel').innerText = state.depositoAttivo || "Configurazione"; }
     function apriReset() { document.getElementById('resetModal').style.display = 'block'; }
@@ -600,16 +603,9 @@
     }
     
     function popolaCambio() {
-        const s = document.getElementById('singleTurnoSelect');
-        s.innerHTML = '<option value="" disabled selected>Cambia...</option><option value="RIPOSO">RIPOSO</option><option value="DISP">DISP</option>';
-        const rot = getRotazionePerData(selectedDate);
-        if(!rot || !rot[state.depositoAttivo]) return;
-        let tutti = []; Object.values(rot).forEach(list => list.forEach(t => { if(t.toUpperCase() !== "DISP") tutti.push(t.toUpperCase()); }));
-        [...new Set(tutti)].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).forEach(t => {
-            let o = document.createElement('option'); o.value = t; o.textContent = t; s.appendChild(o);
-        });
+        const input = document.getElementById('singleTurnoSelect');
+        input.value = '';
         document.getElementById('btnSalvaCambio').disabled = true;
-        s.onchange = () => { document.getElementById('btnSalvaCambio').disabled = false; };
     }
 
     function inizializzaCalendario() {
@@ -625,4 +621,3 @@
 </script>
 </body>
 </html>
- 
