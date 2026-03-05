@@ -68,7 +68,6 @@
         .instruction-text { font-size: 15px; line-height: 1.6; color: #525f7f; margin-bottom: 10px; }
         .deposito-tag { font-size: 10px; background: #eef2ff; color: var(--turno); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
 
-        /* Stili per la scelta dei nuovi colori */
         .color-circle { width: 45px; height: 45px; border-radius: 50%; display: inline-block; margin: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .color-yellow { background: #f1c40f; }
         .color-orange { background: #fd7e14; }
@@ -92,6 +91,7 @@
         <span id="activeDepotLabel" class="deposito-tag">In attesa...</span>
     </div>
     <div>
+        <button id="btnInstall" class="btn btn-reset" style="background: #2dce89; margin-right: 5px; display: none;" onclick="installaApp()">INSTALLA</button>
         <button class="btn btn-reset" style="background: #5e72e4; margin-right: 5px;" onclick="scaricaPDF()">PDF</button>
         <button class="btn btn-reset" style="background: #adb5bd; margin-right: 5px;" onclick="apriBackup()">BACKUP</button>
         <button class="btn btn-reset" onclick="apriReset()">RESET</button>
@@ -217,6 +217,30 @@
     if (!state.colori) state.colori = {}; 
 
     let selectedDate, tempRotDate, calendar;
+    let deferredPrompt; // Variabile per gestire l'installazione PWA
+
+    // Logica per gestire il prompt di installazione
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('btnInstall').style.display = 'inline-block';
+    });
+
+    window.addEventListener('appinstalled', () => {
+        document.getElementById('btnInstall').style.display = 'none';
+        deferredPrompt = null;
+    });
+
+    async function installaApp() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                document.getElementById('btnInstall').style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+    }
 
     function stringToNum(s) { if(!s) return 0; let p = s.split('-'); return Math.floor(new Date(p[0], p[1]-1, p[2], 12, 0, 0).getTime() / 86400000); }
     function formattaData(d) { let dataObj = new Date(d); let mese = dataObj.toLocaleDateString('it-IT', { month: 'long' }); return dataObj.getDate() + ' ' + mese.charAt(0).toUpperCase() + mese.slice(1); }
@@ -621,6 +645,3 @@
 </script>
 </body>
 </html>
-
-
-
