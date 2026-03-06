@@ -195,7 +195,7 @@
 <div id="imageModal" style="z-index: 10000;">
     <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="chiudiImageModal()">&times;</div>
     <div style="display:flex; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px;">
-        <img id="turnoImage" src="" style="max-width: 100%; max-height: 75vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;" onerror="erroreImmagine()">
+        <img id="turnoImage" src="" style="max-width: 100%; max-height: 75vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
     </div>
     <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;">📥 Scarica</button>
 </div>
@@ -444,15 +444,29 @@
         }
     }
 
+    // MODIFICA CRITICA: Gestione sicura degli errori immagine per evitare loop infiniti
     function apriImmagineTurno() {
         if (!currentImagePath) return;
-        document.getElementById('turnoImage').src = currentImagePath;
+        
+        let imgElement = document.getElementById('turnoImage');
+        // Riattivo l'ascoltatore di errori prima di caricare la nuova immagine
+        imgElement.onerror = erroreImmagine; 
+        imgElement.src = currentImagePath;
+        
         document.getElementById('imageModal').style.display = 'block';
     }
 
     function chiudiImageModal() {
         document.getElementById('imageModal').style.display = 'none';
-        document.getElementById('turnoImage').src = "";
+        // Uso removeAttribute invece di src="" per evitare che Android impazzisca tentando di caricare un'immagine vuota
+        document.getElementById('turnoImage').removeAttribute('src');
+    }
+
+    function erroreImmagine() {
+        // Disattivo subito l'ascoltatore per stoppare il loop infinito!
+        document.getElementById('turnoImage').onerror = null; 
+        alert("L'immagine del turno non è stata trovata nel database.");
+        chiudiImageModal();
     }
 
     function scaricaImmagineTurno() {
@@ -463,11 +477,6 @@
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-    }
-
-    function erroreImmagine() {
-        alert("L'immagine del turno non è stata trovata nel database.");
-        chiudiImageModal();
     }
 
     function procediConfigurazione() {
@@ -716,3 +725,4 @@
 </script>
 </body>
 </html>
+ 
