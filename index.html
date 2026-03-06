@@ -59,7 +59,7 @@
             font-size: 13px; text-align: center; line-height: 1.4;
         }
 
-        #welcomeModal, #stepModal, #editModal, #resetModal, #backupModal, #colorModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        #welcomeModal, #stepModal, #editModal, #resetModal, #backupModal, #colorModal, #imageModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
         .modal-content { background: white; margin: 15% auto; padding: 25px; width: 85%; max-width: 400px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
 
         select, input[type="text"] { width: 100%; box-sizing: border-box; margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 12px; font-size: 16px; background: white; -webkit-appearance: none; }
@@ -163,6 +163,8 @@
         <h3 id="modalDate" style="margin-top:0;">Data</h3>
         <div id="infoTurniArea" style="font-size:0.9em; margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:10px; text-align:left; color:#525f7f; display:none;"></div>
         
+        <button id="btnVisualizzaTurno" class="btn" style="background: #2dce89; margin-bottom: 15px; display: none;" onclick="apriImmagineTurno()">Mostra Immagine Turno</button>
+        
         <input type="text" id="singleTurnoSelect" placeholder="Inserisci il turno" oninput="this.value = this.value.toUpperCase(); document.getElementById('btnSalvaCambio').disabled = this.value.trim() === '';">
         
         <button id="btnSalvaCambio" class="btn" style="background: #32325d" onclick="salvaCambioSingolo()" disabled>Salva Cambio</button>
@@ -190,6 +192,14 @@
     </div>
 </div>
 
+<div id="imageModal" style="z-index: 10000;">
+    <div style="position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 35px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="chiudiImageModal()">&times;</div>
+    <div style="display:flex; justify-content:center; align-items:center; height:100%; padding:20px; padding-bottom: 80px;">
+        <img id="turnoImage" src="" style="max-width: 100%; max-height: 75vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;" onerror="erroreImmagine()">
+    </div>
+    <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;">📥 Scarica</button>
+</div>
+
 <div id="calendar"></div>
 
 <div class="disclaimer-banner">
@@ -202,6 +212,9 @@
     const ECCEZIONE_DOMENICA_6P = true; 
 
     const LISTA_FILE_INFO = ["info_turni_dal_2026-03-02.json", "info_turni_2026-02-06.json"];
+    
+    // Elenco delle cartelle immagini su GitHub da aggiornare insieme ai file info
+    const LISTA_CARTELLE_IMMAGINI = ["turni_2026-03-02" ];
 
     const LISTA_FILE_ROTAZIONI = [
         { inizio: "2025-01-01", fine: "2026-03-01", file: "rotazioni_2026-02-06.json" },
@@ -218,6 +231,7 @@
 
     let selectedDate, tempRotDate, calendar;
     let deferredPrompt; 
+    let currentImagePath = "";
 
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -394,8 +408,15 @@
             
             const dateChiavi = Object.keys(state.dbCache || {}).sort();
             let dbCorrente = {};
+            let dataAttiva = dateChiavi[0] || "2026-03-02";
             const dSelezionata = stringToNum(date);
-            for (let i = dateChiavi.length - 1; i >= 0; i--) { if (dSelezionata >= stringToNum(dateChiavi[i])) { dbCorrente = state.dbCache[dateChiavi[i]]; break; } }
+            for (let i = dateChiavi.length - 1; i >= 0; i--) { 
+                if (dSelezionata >= stringToNum(dateChiavi[i])) { 
+                    dbCorrente = state.dbCache[dateChiavi[i]]; 
+                    dataAttiva = dateChiavi[i];
+                    break; 
+                } 
+            }
             
             const giorniSuffix = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
             let giornoIdx = new Date(date).getDay();
@@ -409,8 +430,44 @@
                 htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
             }
             infoArea.innerHTML = htmlInfo; infoArea.style.display = "block"; popolaCambio();
+
+            const btnImmagine = document.getElementById('btnVisualizzaTurno');
+            if (codiceBase !== 'RIPOSO' && codiceBase !== 'DISP' && codiceBase !== 'AL' && codiceBase !== 'NESSUN TURNO') {
+                currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
+                btnImmagine.style.display = 'block';
+            } else {
+                currentImagePath = "";
+                btnImmagine.style.display = 'none';
+            }
+
             document.getElementById('editModal').style.display = 'block';
         }
+    }
+
+    function apriImmagineTurno() {
+        if (!currentImagePath) return;
+        document.getElementById('turnoImage').src = currentImagePath;
+        document.getElementById('imageModal').style.display = 'block';
+    }
+
+    function chiudiImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+        document.getElementById('turnoImage').src = "";
+    }
+
+    function scaricaImmagineTurno() {
+        if (!currentImagePath) return;
+        const a = document.createElement('a');
+        a.href = currentImagePath;
+        a.download = currentImagePath.split('/').pop();
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function erroreImmagine() {
+        alert("L'immagine del turno non è stata trovata nel database.");
+        chiudiImageModal();
     }
 
     function procediConfigurazione() {
