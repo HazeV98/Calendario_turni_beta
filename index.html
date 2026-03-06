@@ -209,14 +209,8 @@
     ];
     
     const RESET_DOPO_AGGIORNAMENTO = {
-        rot_fnove: true, 
-        spez_fnove: true, 
-        rot_proma: true, 
-        spez_proma: true,
-        rot_szaccaria: true, 
-        spez_szaccaria: true, 
-        rot_lido: true, 
-        spez_lido: true
+        rot_fnove: true, spez_fnove: true, rot_proma: true, spez_proma: true,
+        rot_szaccaria: true, spez_szaccaria: true, rot_lido: true, spez_lido: true
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
@@ -402,7 +396,14 @@
             let dbCorrente = {};
             const dSelezionata = stringToNum(date);
             for (let i = dateChiavi.length - 1; i >= 0; i--) { if (dSelezionata >= stringToNum(dateChiavi[i])) { dbCorrente = state.dbCache[dateChiavi[i]]; break; } }
-            const dettagli = dbCorrente[nomeTurno.toUpperCase()];
+            
+            const giorniSuffix = ["_DOM", "_LUN", "_MAR", "_MER", "_GIO", "_VEN", "_SAB"];
+            let giornoIdx = new Date(date).getDay();
+            let suffissoGiorno = giorniSuffix[giornoIdx];
+            
+            let codiceBase = nomeTurno.toUpperCase();
+            let dettagli = dbCorrente[codiceBase + suffissoGiorno] || dbCorrente[codiceBase];
+
             if (dettagli) {
                 htmlInfo += `<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">`;
                 htmlInfo += `<b>Inizio:</b> ${dettagli.inizio} (${dettagli.luogoInizio})<br><b>Fine:</b> ${dettagli.fine} (${dettagli.luogoFine})`;
