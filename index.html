@@ -587,14 +587,19 @@
         document.getElementById('stepModal').style.display = 'block';
     }
 
-    function isGiornoRiposo(dStr) {
-        if (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL") return true;
-        let cfg = (state.history && stringToNum(dStr) < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+    // MODIFICA: Funzione matematica pura per contare i giorni lavorativi senza convertire date
+    function isGiornoRiposoBase(curr, cfg) {
         if (!cfg.riposoStart) return false;
-        let ref = stringToNum(cfg.riposoStart), curr = stringToNum(dStr);
+        let ref = stringToNum(cfg.riposoStart);
         if (cfg.depositoAttivo === 'disp_det') return (((curr - ref) % 6 + 6) % 6 === 0);
         let pos = ((curr - ref + 6) % 15 + 15) % 15;
         return (pos === 6 || pos === 13 || pos === 14);
+    }
+
+    function isGiornoRiposo(dStr) {
+        if (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL") return true;
+        let cfg = (state.history && stringToNum(dStr) < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
+        return isGiornoRiposoBase(stringToNum(dStr), cfg);
     }
 
     function attivaRotazioneFinale() {
@@ -693,10 +698,16 @@
                         ? { start: state.futureConfig.dataInizio, idx: state.futureConfig.turnoIndex }
                         : { start: cfgBase.rotazioneStart, idx: cfgBase.turnoIndex };
                     
-                    let refRot = stringToNum(activeCfg.start), refRip = stringToNum(cfgBase.riposoStart), w = 0;
-                    if (curr >= refRot) { for (let j = refRot; j < curr; j++) { if (!isGiornoRiposo(new Date(j * 86400000).toISOString().split('T')[0])) w++; } }
-                    else { for (let j = refRot; j > curr; j--) { if (!isGiornoRiposo(new Date(j * 86400000).toISOString().split('T')[0])) w--; } }
+                    let refRot = stringToNum(activeCfg.start), w = 0;
                     
+                    // MODIFICA: Calcolo ultra veloce tramite matematica senza creazione di date e ignora le variazioni manuali (bugfix!)
+                    if (curr >= refRot) { 
+                        for (let j = refRot; j < curr; j++) { if (!isGiornoRiposoBase(j, cfgBase)) w++; } 
+                    } else { 
+                        for (let j = refRot; j > curr; j--) { if (!isGiornoRiposoBase(j, cfgBase)) w--; } 
+                    }
+                    
+                    let refRip = stringToNum(cfgBase.riposoStart);
                     let startPos = ((refRot - refRip + 6) % 15 + 15) % 15;
                     let offset = [1, 3, 5, 8, 10, 12].includes(startPos) ? 1 : 0;
                     const rotList = (currentRotRules && currentRotRules[cfgBase.depositoAttivo]) ? currentRotRules[cfgBase.depositoAttivo] : [];
@@ -810,5 +821,3 @@
 </script>
 </body>
 </html>
- 
-
