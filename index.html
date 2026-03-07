@@ -198,7 +198,7 @@
         <img id="turnoImage" src="" style="max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
         
         <div id="imageBanner" style="margin-top: 15px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 13px; text-align: center; max-width: 90%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-            ⚠️ Controllare sempre i turni ufficiali ed eventuali varianti ai turni.
+            ⚠️ Controllare sempre gli ordini di servizio ufficiali.
         </div>
     </div>
     <button onclick="scaricaImmagineTurno()" style="position: absolute; bottom: calc(30px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #11cdef; color: white; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;">📥 Scarica</button>
@@ -571,15 +571,15 @@
         if (!state.riposoStart) return [];
         let evs = []; let today = new Date();
         
-        let limit = 365;
+        let limit = 1825; 
         let todayNum = stringToNum(today.toISOString().split('T')[0]);
         if (state.rotazioneStart) {
             let distDaOggi = Math.abs(todayNum - stringToNum(state.rotazioneStart));
-            limit = distDaOggi + 365; 
+            limit = distDaOggi + 1825; 
         }
         if (state.futureConfig && state.futureConfig.dataInizio) {
             let distFutura = Math.abs(todayNum - stringToNum(state.futureConfig.dataInizio));
-            if (distFutura + 365 > limit) limit = distFutura + 365;
+            if (distFutura + 1825 > limit) limit = distFutura + 1825;
         }
 
         for (let i = -31; i < limit; i++) {
@@ -732,4 +732,4 @@
 </script>
 </body>
 </html>
-
+ 
