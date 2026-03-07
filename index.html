@@ -510,12 +510,10 @@
         document.body.removeChild(a);
     }
     
-    // NUOVA FUNZIONE: Salto rapido alla data
     function apriJumpModal() {
         const yearSelect = document.getElementById('jumpYear');
         if(yearSelect.options.length === 0) {
             let currYear = new Date().getFullYear();
-            // Popola l'anno da due anni fa a 5 anni nel futuro
             for(let i = currYear - 2; i <= currYear + 5; i++) {
                 let opt = document.createElement('option');
                 opt.value = i;
@@ -524,7 +522,6 @@
                 yearSelect.appendChild(opt);
             }
         }
-        // Imposta il mese corrente
         let currMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
         document.getElementById('jumpMonth').value = currMonth;
         
@@ -627,18 +624,21 @@
         if (!state.riposoStart) return [];
         let evs = []; let today = new Date();
         
-        let limit = 1825; 
+        let limitTurni = 365;
+        let limitRiposi = 1825;
         let todayNum = stringToNum(today.toISOString().split('T')[0]);
         if (state.rotazioneStart) {
             let distDaOggi = Math.abs(todayNum - stringToNum(state.rotazioneStart));
-            limit = distDaOggi + 1825; 
+            limitTurni = distDaOggi + 365; 
+            limitRiposi = distDaOggi + 1825; 
         }
         if (state.futureConfig && state.futureConfig.dataInizio) {
             let distFutura = Math.abs(todayNum - stringToNum(state.futureConfig.dataInizio));
-            if (distFutura + 1825 > limit) limit = distFutura + 1825;
+            if (distFutura + 365 > limitTurni) limitTurni = distFutura + 365;
+            if (distFutura + 1825 > limitRiposi) limitRiposi = distFutura + 1825;
         }
 
-        for (let i = -31; i < limit; i++) {
+        for (let i = -31; i < limitRiposi; i++) {
             let dObj = new Date(today); dObj.setDate(today.getDate() + i);
             let dStr = dObj.toISOString().split('T')[0];
             let curr = stringToNum(dStr);
@@ -667,7 +667,7 @@
                 else { ev.className = 'bg-riposo'; }
                 evs.push(ev);
             }
-            else {
+            else if (i < limitTurni) {
                 let isPastUpdate = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI));
                 let cfgBase = isPastUpdate ? state.history : state;
                 const currentRotRules = getRotazionePerData(dStr);
@@ -775,7 +775,6 @@
         document.getElementById('btnSalvaCambio').disabled = true;
     }
 
-    // MODIFICA: Aggiunto bottone personalizzato "btnSalto" nella barra
     function inizializzaCalendario() {
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
             initialView: 'dayGridMonth', locale: 'it', firstDay: 1, height: 'auto',
@@ -795,4 +794,3 @@
 </script>
 </body>
 </html>
- 
