@@ -39,6 +39,7 @@
 
         .fc .fc-toolbar-title { font-size: 1.2em !important; text-transform: capitalize; }
         .fc .fc-button { padding: 5px 10px !important; font-size: 0.9em !important; }
+        .fc .fc-btnSalto-button { background-color: white !important; border-color: #e9ecef !important; color: #32325d !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important; }
         .fc .fc-daygrid-day-frame { min-height: 80px !important; cursor: pointer; }
         
         .fc-event { 
@@ -461,7 +462,7 @@
             infoArea.innerHTML = htmlInfo; infoArea.style.display = "block"; popolaCambio();
 
             const btnImmagine = document.getElementById('btnVisualizzaTurno');
-            if (codiceBase !== 'RIPOSO' && codiceBase !== 'DISP' && codiceBase !== 'AL' && codiceBase !== 'NESSUN TURNO') {
+            if (codiceBase !== 'RI' && codiceBase !== 'RIPOSO' && codiceBase !== 'DISP' && codiceBase !== 'AL' && codiceBase !== 'NESSUN TURNO') {
                 currentImagePath = `turni_${dataAttiva}/${codiceBase}.jpg`;
                 btnImmagine.style.display = 'block';
             } else {
@@ -573,7 +574,7 @@
     }
 
     function isGiornoRiposo(dStr) {
-        if (state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL") return true;
+        if (state.variazioni[dStr] === "RI" || state.variazioni[dStr] === "RIPOSO" || state.variazioni[dStr] === "AL") return true;
         let cfg = (state.history && stringToNum(dStr) < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
         if (!cfg.riposoStart) return false;
         let ref = stringToNum(cfg.riposoStart), curr = stringToNum(dStr);
@@ -649,12 +650,12 @@
             if (state.variazioni[dStr]) {
                 let ev = { title: state.variazioni[dStr], start: dStr, allDay: true };
                 if (customColor) { ev.backgroundColor = customColor; ev.textColor = tColor; }
-                else { ev.className = (state.variazioni[dStr]==='RIPOSO' || state.variazioni[dStr]==='AL') ? 'bg-riposo' : 'bg-modificato'; }
+                else { ev.className = (state.variazioni[dStr]==='RI' || state.variazioni[dStr]==='RIPOSO' || state.variazioni[dStr]==='AL') ? 'bg-riposo' : 'bg-modificato'; }
                 evs.push(ev);
                 continue;
             }
             if (isGiornoRiposo(dStr)) { 
-                let titoloRiposo = 'RIPOSO';
+                let titoloRiposo = 'RI';
                 let cfgBase = (state.history && curr < stringToNum(DATA_INIZIO_NUOVI_TURNI)) ? state.history : state;
                 if (cfgBase.riposoStart && cfgBase.depositoAttivo !== 'disp_det') {
                     let ref = stringToNum(cfgBase.riposoStart);
@@ -778,6 +779,7 @@
     function inizializzaCalendario() {
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
             initialView: 'dayGridMonth', locale: 'it', firstDay: 1, height: 'auto',
+            buttonText: { today: 'Oggi' },
             customButtons: {
                 btnSalto: {
                     text: '🔍',
