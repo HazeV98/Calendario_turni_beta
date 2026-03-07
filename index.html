@@ -163,6 +163,10 @@
                 <option value="spez_szaccaria">Spezzati S.Zaccaria</option>
                 <option value="rot_lido">Rotazione Lido</option>
                 <option value="spez_lido">Spezzati Lido</option>
+                <option value="rot_linea14">Rotazione Linea 14</option>
+                <option value="rot_17sn">Linea 17 S. Nicolò</option>
+                <option value="rot_17tr">Linea 17 Tronchetto</option>
+                <option value="rot_linea12">Rotazione Linea 12</option>
             </optgroup>
         </select>
         <button id="btnConfRot" class="btn" style="background: #adb5bd" onclick="confermaRotazione()" disabled>Prosegui</button>
@@ -259,7 +263,11 @@
         rot_szaccaria: true, 
         spez_szaccaria: true, 
         rot_lido: true, 
-        spez_lido: true
+        spez_lido: true,
+        rot_linea14: true,
+        rot_17sn: true,
+        rot_17tr: true,
+        rot_linea12: true
     };
 
     let state = JSON.parse(localStorage.getItem('myTurniApp')) || { version: "0", variazioni: {}, colori: {}, setupStep: 0, dbCache: {}, rotCache: {} };
@@ -802,4 +810,4 @@
 </script>
 </body>
 </html>
-
+ 
